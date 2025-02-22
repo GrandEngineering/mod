@@ -1,0 +1,12 @@
+[package]
+name = "engine_core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+# Indicate this is a library that can be compiled to WebAssembly
+crate-type = ["cdylib", "rlib"]
+[dependencies]
+enginelib = { git = "https://github.com/GrandEngineering/enginelib.git" }
+engine = { git = "https://github.com/GrandEngineering/engine.git" }
+serde = { version = "1.0.217", features = ["derive"] }
