@@ -1,16 +1,17 @@
 {
-  description = "Build a cargo project without extra checks";
+  description = "Rust project with library and binary components";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-
     crane.url = "github:ipetkov/crane";
-
-    flake-utils.url = "github:numtide/flake-utils";
-    engine.url = "github:GrandEngineering/engine";
-    engine.flake = false;
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
+    fenix = {
+      url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    flake-utils.url = "github:numtide/flake-utils";
+    binary-src = {
+      url = "github:GrandEngineering/engine/main";
+      flake = false;
     };
   };
 
@@ -18,64 +19,135 @@
     self,
     nixpkgs,
     crane,
+    fenix,
     flake-utils,
-    rust-overlay,
-    engine,
+    binary-src,
     ...
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = [(import rust-overlay)];
-      };
+      pkgs = nixpkgs.legacyPackages.${system};
+      cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+      crateName = cargoToml.package.name;
+      toolchain = with fenix.packages.${system};
+        combine [
+          minimal.rustc
+          minimal.cargo
+          targets.x86_64-pc-windows-gnu.latest.rust-std
+        ];
 
-      # NB: we don't need to overlay our custom toolchain for the *entire*
-      # pkgs (which would require rebuidling anything else which uses rust).
-      # Instead, we just want to update the scope that crane will use by appending
-      # our specific toolchain there.
-      craneLib = (crane.mkLib pkgs).overrideToolchain (p:
-        p.rust-bin.stable.latest.default.override {
-          targets = ["x86_64-unknown-linux-gnu" "x86_64-pc-windows-gnu"];
-        });
+      craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
 
-      my-crate = craneLib.buildPackage {
+      commonArgs = {
         src = craneLib.cleanCargoSource ./.;
         strictDeps = true;
-
-        cargoExtraArgs = "--target x86_64-unknown-linux-gnu";
-
-        # Tests currently need to be run via `cargo wasi` which
-        # isn't packaged in nixpkgs yet...
         doCheck = false;
+        nativeBuildInputs = [pkgs.git];
+        cargoAllowGemlockFailure = true;
+        cargoGitCommand = "${pkgs.git}/bin/git";
+      };
 
-        buildInputs =
-          [
-          ]
-          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-            # Additional darwin specific inputs can be set here
-            pkgs.libiconv
+      # Build for Linux
+      linuxLib = craneLib.buildPackage (commonArgs
+        // {
+          pname = "linux-lib";
+          version = "1.0.0";
+
+          postInstall = ''
+            mkdir -p $out
+            cp target/release/lib${crateName}.so $out/mod.so
+          '';
+        });
+
+      # Build for Windows
+      windowsLib = craneLib.buildPackage (commonArgs
+        // {
+          pname = "windows-lib";
+          version = "1.0.0";
+
+          CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+          TARGET_CC = "${pkgs.pkgsCross.mingwW64.stdenv.cc}/bin/${pkgs.pkgsCross.mingwW64.stdenv.cc.targetPrefix}cc";
+
+          depsBuildBuild = with pkgs; [
+            pkgsCross.mingwW64.stdenv.cc
+            pkgsCross.mingwW64.windows.pthreads
           ];
+
+          postInstall = ''
+            mkdir -p $out
+            cp target/x86_64-pc-windows-gnu/release/${crateName}.dll $out/mod.dll
+          '';
+        });
+
+      # Create the archive
+      libArchive = pkgs.stdenv.mkDerivation {
+        name = "${crateName}.rustforge";
+        src = ./.; # Add this line to provide a source
+        nativeBuildInputs = [pkgs.gnutar];
+
+        buildPhase = ''
+          mkdir -p build
+          cp ${linuxLib}/mod.so build/
+          cp ${windowsLib}/mod.dll build/
+          cd build
+          ${pkgs.gnutar}/bin/tar -cf mod.rustforge.tar *
+          cp mod.rustforge.tar ..
+          cd ..
+        '';
+
+        installPhase = ''
+          mkdir -p $out
+          cp mod.rustforge.tar $out/
+        '';
       };
+
+      # Binary compilation
+      rustBinary = craneLib.buildPackage {
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        src = binary-src;
+        doCheck = false;
+        nativeBuildInputs = [pkgs.git pkgs.protobuf];
+      };
+
+      # Create wrapper scripts
+      serverWrapper = pkgs.writeShellScriptBin "server-wrapper" ''
+        TMPDIR=$(mktemp -d)
+        trap 'rm -rf "$TMPDIR"' EXIT
+        cd "$TMPDIR"
+        cp ${libArchive}/mod.rustforge.tar .
+        LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/server "$@"
+      '';
+
+      clientWrapper = pkgs.writeShellScriptBin "client-wrapper" ''
+        TMPDIR=$(mktemp -d)
+        trap 'rm -rf "$TMPDIR"' EXIT
+        cd "$TMPDIR"
+        cp ${libArchive}/mod.rustforge.tar .
+        LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/client "$@"
+      '';
     in {
-      checks = {
-        inherit my-crate;
+      packages = {
+        default = libArchive;
       };
 
-      packages.default = my-crate;
+      apps = {
+        default = {
+          type = "app";
+          program = "${serverWrapper}/bin/server-wrapper";
+        };
 
-      # apps.default = flake-utils.lib.mkApp {
-      #   drv = pkgs.writeShellScriptBin "my-app" ''
-      #     ${pkgs.wasmtime}/bin/wasmtime run ${my-crate}/bin/custom-toolchain.wasm
-      #   '';
-      # };
+        server = self.apps.${system}.default;
+
+        client = {
+          type = "app";
+          program = "${clientWrapper}/bin/client-wrapper";
+        };
+      };
 
       devShells.default = craneLib.devShell {
-        # Inherit inputs from checks.
-        checks = self.checks.${system};
-
-        # Extra inputs can be added here; cargo and rustc are provided by default
-        # from the toolchain that was specified earlier.
-        packages = [
+        packages = with pkgs; [
+          git
+          pkgsCross.mingwW64.stdenv.cc
+          pkgsCross.mingwW64.windows.pthreads
         ];
       };
     });

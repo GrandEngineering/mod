@@ -8,5 +8,5 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 [dependencies]
 enginelib = { git = "https://github.com/GrandEngineering/enginelib.git" }
-engine = { git = "https://github.com/GrandEngineering/engine.git" }
+#engine = { git = "https://github.com/GrandEngineering/engine.git" }
 serde = { version = "1.0.217", features = ["derive"] }
