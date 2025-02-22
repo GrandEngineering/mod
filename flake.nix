@@ -34,7 +34,7 @@
           minimal.cargo
           targets.x86_64-pc-windows-gnu.latest.rust-std
         ];
-
+      name = "${crateName}.rustforge.tar";
       craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
 
       commonArgs = {
@@ -80,7 +80,7 @@
 
       # Create the archive
       libArchive = pkgs.stdenv.mkDerivation {
-        name = "${crateName}.rustforge";
+        name = "${crateName}.rustforge.tar";
         src = ./.; # Add this line to provide a source
         nativeBuildInputs = [pkgs.gnutar];
 
@@ -89,14 +89,14 @@
           cp ${linuxLib}/mod.so build/
           cp ${windowsLib}/mod.dll build/
           cd build
-          ${pkgs.gnutar}/bin/tar -cf mod.rustforge.tar *
-          cp mod.rustforge.tar ..
+          ${pkgs.gnutar}/bin/tar -cf ${name} *
+          cp ${name} ..
           cd ..
         '';
 
         installPhase = ''
           mkdir -p $out
-          cp mod.rustforge.tar $out/
+          cp ${name} $out/
         '';
       };
 
@@ -114,7 +114,7 @@
         trap 'rm -rf "$TMPDIR"' EXIT
         cd "$TMPDIR"
         mkdir mods
-        cp ${libArchive}/mod.rustforge.tar ./mods
+        cp ${libArchive}/${name} ./mods
         LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/server "$@"
       '';
 
@@ -123,7 +123,7 @@
         trap 'rm -rf "$TMPDIR"' EXIT
         cd "$TMPDIR"
         mkdir mods
-        cp ${libArchive}/mod.rustforge.tar ./mods
+        cp ${libArchive}/${name} ./mods
         LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/client "$@"
       '';
     in {
