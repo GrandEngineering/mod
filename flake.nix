@@ -55,6 +55,7 @@
           postInstall = ''
             mkdir -p $out
             cp target/release/lib${crateName}.so $out/mod.so
+            cp target/release/lib${crateName}.so $out/mod.so
           '';
         });
 
@@ -114,6 +115,7 @@
         trap 'rm -rf "$TMPDIR"' EXIT
         cd "$TMPDIR"
         mkdir mods
+        rm -rf mods/*
         cp ${libArchive}/${name} ./mods
         LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/server "$@"
       '';
@@ -123,6 +125,7 @@
         trap 'rm -rf "$TMPDIR"' EXIT
         cd "$TMPDIR"
         mkdir mods
+        rm -rf mods/*
         cp ${libArchive}/${name} ./mods
         LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/client "$@"
       '';
