@@ -113,7 +113,8 @@
         TMPDIR=$(mktemp -d)
         trap 'rm -rf "$TMPDIR"' EXIT
         cd "$TMPDIR"
-        cp ${libArchive}/mod.rustforge.tar .
+        mkdir mods
+        cp ${libArchive}/mod.rustforge.tar ./mods
         LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/server "$@"
       '';
 
@@ -121,7 +122,8 @@
         TMPDIR=$(mktemp -d)
         trap 'rm -rf "$TMPDIR"' EXIT
         cd "$TMPDIR"
-        cp ${libArchive}/mod.rustforge.tar .
+        mkdir mods
+        cp ${libArchive}/mod.rustforge.tar ./mods
         LD_LIBRARY_PATH=$TMPDIR exec ${rustBinary}/bin/client "$@"
       '';
     in {
