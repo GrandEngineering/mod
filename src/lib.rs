@@ -1,19 +1,20 @@
-use enginelib::api::EngineAPI;
-use enginelib::api::{deserialize, serialize};
-use enginelib::event::info;
-use enginelib::event::Event;
-use enginelib::event::EventCTX;
-use enginelib::event::EventHandler;
-use enginelib::events;
-use enginelib::plugin::LibraryMetadata;
-use enginelib::task::Task;
 use enginelib::BuildEventHandler;
 use enginelib::Identifier;
 use enginelib::Registry;
+use enginelib::api::EngineAPI;
+use enginelib::api::deserialize;
+use enginelib::event::Event;
+use enginelib::event::EventCTX;
+use enginelib::event::EventHandler;
+use enginelib::event::info;
+use enginelib::events;
+use enginelib::plugin::LibraryMetadata;
+use enginelib::prelude::macros::metadata;
+use enginelib::prelude::macros::module;
+use enginelib::task::Task;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt::Debug;
-use std::sync::Arc;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct FibTask {
     pub iter: u64,
@@ -45,7 +46,7 @@ impl Task for FibTask {
     }
 }
 
-#[no_mangle]
+#[metadata]
 pub fn metadata() -> LibraryMetadata {
     let meta: LibraryMetadata = LibraryMetadata {
         mod_id: "engine_core".to_owned(),
@@ -56,7 +57,7 @@ pub fn metadata() -> LibraryMetadata {
     };
     meta
 }
-#[no_mangle]
+#[module]
 pub fn run(api: &mut EngineAPI) {
     EngineAPI::setup_logger();
     let mod_id = "engine_core".to_string();
