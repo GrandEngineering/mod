@@ -1,5 +1,6 @@
-use enginelib::BuildEventHandler;
 use enginelib::Identifier;
+use enginelib::RegisterCgrpcEventHandler;
+use enginelib::RegisterEventHandler;
 use enginelib::Registry;
 use enginelib::api::EngineAPI;
 use enginelib::api::deserialize;
@@ -8,12 +9,17 @@ use enginelib::event::EventCTX;
 use enginelib::event::EventHandler;
 use enginelib::event::info;
 use enginelib::events;
+use enginelib::events::Events;
+use enginelib::events::ID;
+use enginelib::events::cgrpc_event::CgrpcEvent;
 use enginelib::plugin::LibraryMetadata;
 use enginelib::prelude::macros::metadata;
 use enginelib::prelude::macros::module;
+use enginelib::register_event;
 use enginelib::task::Task;
 use serde::Deserialize;
 use serde::Serialize;
+use std::any::Any;
 use std::fmt::Debug;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct FibTask {
@@ -57,6 +63,34 @@ pub fn metadata() -> LibraryMetadata {
     };
     meta
 }
+#[derive(Clone, Debug)]
+struct CustomEvent {
+    pub id: Identifier,
+    pub cancelled: bool,
+}
+impl Event for CustomEvent {
+    fn clone_box(&self) -> Box<dyn Event> {
+        Box::new(self.clone())
+    }
+
+    fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+    fn is_cancelled(&self) -> bool {
+        self.cancelled
+    }
+    fn get_id(&self) -> Identifier {
+        self.id.clone()
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
 #[module]
 pub fn run(api: &mut EngineAPI) {
     EngineAPI::setup_logger();
@@ -65,8 +99,29 @@ pub fn run(api: &mut EngineAPI) {
 
     let meta: LibraryMetadata = metadata();
     let mod_ctx = Arc::new(meta.clone());
-    BuildEventHandler!(
-        OnStartEventHandler,
+    register_event!(
+        api,
+        engine_core,
+        custom_event,
+        CustomEvent {
+            cancelled: false,
+            id: ID("engine_core", "custom_event")
+        }
+    );
+    RegisterCgrpcEventHandler!(cgrpcHandler, engine_core, grpc, |event: &mut CgrpcEvent| {
+        event.output.write().unwrap().append(event.payload.as_mut());
+        println!("grpc event!");
+    });
+    RegisterEventHandler!(
+        CustomEventHandler,
+        CustomEvent,
+        |event: &mut CustomEvent| {
+            info!("Custom Event",);
+        }
+    );
+
+    RegisterEventHandler!(
+        StartEventHandler,
         events::start_event::StartEvent,
         LibraryMetadata,
         |event: &mut events::start_event::StartEvent, mod_ctx: &Arc<LibraryMetadata>| {
@@ -83,7 +138,22 @@ pub fn run(api: &mut EngineAPI) {
     api.task_registry
         .register(tsk_ref, (mod_id.clone(), task_id.clone()));
     api.event_bus.event_handler_registry.register_handler(
-        OnStartEventHandler { mod_ctx },
+        StartEventHandler { mod_ctx },
         ("core".to_string(), "start_event".to_string()),
+    );
+    api.event_bus.event_handler_registry.register_handler(
+        cgrpcHandler {},
+        ("core".to_string(), "cgrpc_event".to_string()),
+    );
+    api.event_bus.event_handler_registry.register_handler(
+        CustomEventHandler {},
+        ("engine_core".to_string(), "custom_event".to_string()),
+    );
+    api.event_bus.handle(
+        ("engine_core".into(), "custom_event".into()),
+        &mut CustomEvent {
+            cancelled: false,
+            id: ID("engine_core", "custom_event"),
+        },
     );
 }

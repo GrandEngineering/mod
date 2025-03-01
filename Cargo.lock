@@ -256,7 +256,7 @@ dependencies = [
 [[package]]
 name = "enginelib"
 version = "0.2.0"
-source = "git+https://github.com/GrandEngineering/enginelib.git#78470d11d4aaaac9e0b511e2b3087ef52849e1c9"
+source = "git+https://github.com/GrandEngineering/enginelib.git#cde7bce3665aa849ebb04994f0d1407b577e1d5e"
 dependencies = [
  "bincode",
  "directories",
@@ -1213,7 +1213,7 @@ checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
 [[package]]
 name = "macros"
 version = "0.1.0"
-source = "git+https://github.com/GrandEngineering/enginelib.git#78470d11d4aaaac9e0b511e2b3087ef52849e1c9"
+source = "git+https://github.com/GrandEngineering/enginelib.git#cde7bce3665aa849ebb04994f0d1407b577e1d5e"
 dependencies = [
  "proc-macro2",
  "quote",

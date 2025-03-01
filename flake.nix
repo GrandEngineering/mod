@@ -38,7 +38,7 @@
       craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
 
       commonArgs = {
-        src = craneLib.cleanCargoSource ./.;
+        src =  ./.;
         strictDeps = true;
         doCheck = false;
         nativeBuildInputs = [pkgs.git];
