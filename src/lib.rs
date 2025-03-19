@@ -15,6 +15,7 @@ use enginelib::events::cgrpc_event::CgrpcEvent;
 use enginelib::plugin::LibraryMetadata;
 use enginelib::prelude::macros::metadata;
 use enginelib::prelude::macros::module;
+use enginelib::prelude::*;
 use enginelib::register_event;
 use enginelib::task::Task;
 use serde::Deserialize;
@@ -96,7 +97,6 @@ pub fn run(api: &mut EngineAPI) {
     EngineAPI::setup_logger();
     let mod_id = "engine_core".to_string();
     let task_id = "fib".to_string();
-
     let meta: LibraryMetadata = metadata();
     let mod_ctx = Arc::new(meta.clone());
     register_event!(
