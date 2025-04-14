@@ -28,6 +28,9 @@ pub struct FibTask {
     pub result: u64,
 }
 impl Task for FibTask {
+    fn to_toml(&self) -> String {
+        toml::to_string(&self.clone())
+    }
     fn from_toml(&self, d: String) -> Box<dyn Task> {
         let r: Self = toml::from_str(&d).unwrap();
         Box::new(r)
