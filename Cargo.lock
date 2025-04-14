@@ -418,6 +418,7 @@ dependencies = [
 name = "engine_core"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "enginelib",
  "serde",
 ]

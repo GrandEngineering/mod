@@ -9,20 +9,20 @@ use enginelib::event::EventCTX;
 use enginelib::event::EventHandler;
 use enginelib::event::info;
 use enginelib::events;
-use enginelib::events::Events;
 use enginelib::events::ID;
 use enginelib::events::cgrpc_event::CgrpcEvent;
 use enginelib::plugin::LibraryMetadata;
+use enginelib::prelude::macros::Verifiable;
 use enginelib::prelude::macros::metadata;
 use enginelib::prelude::macros::module;
-use enginelib::prelude::*;
 use enginelib::register_event;
 use enginelib::task::Task;
+use enginelib::task::Verifiable;
 use serde::Deserialize;
 use serde::Serialize;
 use std::any::Any;
 use std::fmt::Debug;
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Verifiable)]
 pub struct FibTask {
     pub iter: u64,
     pub result: u64,
