@@ -28,6 +28,10 @@ pub struct FibTask {
     pub result: u64,
 }
 impl Task for FibTask {
+    fn from_toml(&self, d: String) -> Box<dyn Task> {
+        let r: Self = toml::from_str(&d).unwrap();
+        Box::new(r)
+    }
     fn get_id(&self) -> Identifier {
         ("engine_core".to_string(), "fib".to_string())
     }
