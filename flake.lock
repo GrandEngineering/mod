@@ -3,11 +3,11 @@
     "binary-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1744650393,
-        "narHash": "sha256-oBM14VH074ePK4hyo7P0RFhgmrWvO0OaUZnRXJAL10Y=",
+        "lastModified": 1744670945,
+        "narHash": "sha256-nLCZD13o6t3IscWfB67pFEfiK67xhWLSLwyvMqbg6/4=",
         "owner": "GrandEngineering",
         "repo": "engine",
-        "rev": "41de038e91d1f2171b1efc313cd872e9d8ba1179",
+        "rev": "44d9f88ac247ee9be7ef97822dc9184294dbd0b9",
         "type": "github"
       },
       "original": {
