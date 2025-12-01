@@ -3,7 +3,6 @@ use enginelib::RegisterCgrpcEventHandler;
 use enginelib::RegisterEventHandler;
 use enginelib::Registry;
 use enginelib::api::EngineAPI;
-use enginelib::api::deserialize;
 use enginelib::event::Event;
 use enginelib::event::EventCTX;
 use enginelib::event::EventHandler;
@@ -52,11 +51,11 @@ impl Task for FibTask {
         self.result = a;
     }
     fn from_bytes(&self, bytes: &[u8]) -> Box<dyn Task> {
-        let task: FibTask = deserialize(bytes).unwrap();
+        let task: FibTask = enginelib::api::from_bytes(bytes).unwrap();
         Box::new(task)
     }
     fn to_bytes(&self) -> Vec<u8> {
-        enginelib::api::serialize(self).unwrap()
+        enginelib::api::to_allocvec(self).unwrap()
     }
 }
 
