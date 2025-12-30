@@ -62,9 +62,9 @@ impl Task for FibTask {
 #[metadata]
 pub fn metadata() -> LibraryMetadata {
     let meta: LibraryMetadata = LibraryMetadata {
-        mod_id: "engine_core".to_owned(),
+        mod_id: "engine_mod".to_owned(),
         mod_author: "@ign-styly".to_string(),
-        mod_name: "Engine Core External".to_string(),
+        mod_name: "Engine mod Demo".to_string(),
         mod_version: "0.0.1".to_string(),
         ..Default::default()
     };
