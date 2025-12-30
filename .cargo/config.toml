@@ -1,2 +1,2 @@
 [alias]
-xtask = "run --manifest-path ./xtask/Cargo.toml --"
+rf = "run --manifest-path ./rustforge/Cargo.toml --"

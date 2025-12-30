@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [lib]
-# Indicate this is a library that can be compiled to WebAssembly
 crate-type = ["cdylib", "rlib"]
 [dependencies]
 enginelib = { git = "https://github.com/GrandEngineering/engine.git" }
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "0.9.8"
+
+[metadata.rustforge]
